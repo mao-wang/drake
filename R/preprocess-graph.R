@@ -91,16 +91,16 @@ cdg_bfs_edges <- function(edges, to) {
     to <- setdiff(to, vertices)
     vertices <- c(vertices, to)
   }
-  index <- edges$to %in% vertices & edges$from %in% vertices
-  edges[index, ]
+  vertices
 }
 
 cdg_finalize_graph <- function(edges, targets, config) {
   console_preprocess(text = "construct graph", config = config)
   file_out <- edges$to[edges$from %in% targets & is_encoded_path(edges$to)]
   to <- union(targets, file_out)
-  edges <- cdg_bfs_edges(edges, to)
+  vertices <- cdg_bfs_edges(edges, to)
   graph <- igraph::graph_from_data_frame(edges)
+  graph <- igraph::induced
   graph <- igraph::set_vertex_attr(graph, "imported", value = TRUE)
   index <- c(config$plan$target, file_out)
   index <- intersect(index, igraph::V(graph)$name)
