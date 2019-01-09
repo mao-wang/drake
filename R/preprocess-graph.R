@@ -14,7 +14,7 @@ create_drake_graph <- function(
     console_log_file = console_log_file
   )
   edges <- memo_expr(
-    cdg_create_edges(config, layout, targets),
+    cdg_create_edges(config, layout),
     cache,
     config,
     layout
@@ -27,7 +27,7 @@ create_drake_graph <- function(
   )
 }
 
-cdg_create_edges <- function(config, layout, targets) {
+cdg_create_edges <- function(config, layout) {
   console_preprocess(text = "construct graph edges", config = config)
   edges <- lightly_parallelize(
     X = layout,
@@ -35,8 +35,7 @@ cdg_create_edges <- function(config, layout, targets) {
     jobs = config$jobs
   )
   edges <- do.call(rbind, edges)
-  edges <- cdg_edges_thru_file_out(edges)
-  cdg_bfs_edges(edges, targets)
+  cdg_edges_thru_file_out(edges)
 }
 
 cdg_node_to_edges <- function(node) {
@@ -82,19 +81,26 @@ cdg_transitive_edges <- function(vertex, edges) {
   expand.grid(from = from, to = to, stringsAsFactors = FALSE)
 }
 
-cdg_bfs_edges <- function(edges, targets) {
+cdg_bfs_edges <- function(edges, to) {
   if (!nrow(edges)) {
     return(edges)
   }
-  edges
+  vertices <- to
+  while (length(to)) {
+    to <- edges$from[edges$to %in% to]
+    to <- setdiff(to, vertices)
+    vertices <- c(vertices, to)
+  }
+  index <- edges$to %in% vertices & edges$from %in% vertices
+  edges[index, ]
 }
 
 cdg_finalize_graph <- function(edges, targets, config) {
   console_preprocess(text = "construct graph", config = config)
   file_out <- edges$to[edges$from %in% targets & is_encoded_path(edges$to)]
   to <- union(targets, file_out)
+  edges <- cdg_bfs_edges(edges, to)
   graph <- igraph::graph_from_data_frame(edges)
-  graph <- prune_drake_graph(graph, to = to, jobs = config$jobs)
   graph <- igraph::set_vertex_attr(graph, "imported", value = TRUE)
   index <- c(config$plan$target, file_out)
   index <- intersect(index, igraph::V(graph)$name)
