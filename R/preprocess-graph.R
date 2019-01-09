@@ -35,7 +35,8 @@ cdg_create_edges <- function(config, layout) {
     jobs = config$jobs
   )
   edges <- do.call(rbind, edges)
-  cdg_edges_thru_file_out(edges)
+  edges <- cdg_edges_thru_file_out(edges)
+  cdg_bfs_edges(edges)
 }
 
 cdg_node_to_edges <- function(node) {
@@ -79,6 +80,13 @@ cdg_transitive_edges <- function(vertex, edges) {
   from <- unique(edges$from[edges$to == vertex])
   to <- unique(edges$to[edges$from == vertex])
   expand.grid(from = from, to = to, stringsAsFactors = FALSE)
+}
+
+cdg_bfs_edges <- function(edges) {
+  if (!nrow(edges)) {
+    return(edges)
+  }
+  edges
 }
 
 cdg_finalize_graph <- function(edges, targets, config) {
