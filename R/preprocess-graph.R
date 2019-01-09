@@ -14,7 +14,7 @@ create_drake_graph <- function(
     console_log_file = console_log_file
   )
   edges <- memo_expr(
-    cdg_create_edges(config, layout),
+    cdg_create_edges(config, layout, targets),
     cache,
     config,
     layout
@@ -27,7 +27,7 @@ create_drake_graph <- function(
   )
 }
 
-cdg_create_edges <- function(config, layout) {
+cdg_create_edges <- function(config, layout, targets) {
   console_preprocess(text = "construct graph edges", config = config)
   edges <- lightly_parallelize(
     X = layout,
@@ -36,7 +36,7 @@ cdg_create_edges <- function(config, layout) {
   )
   edges <- do.call(rbind, edges)
   edges <- cdg_edges_thru_file_out(edges)
-  cdg_bfs_edges(edges)
+  cdg_bfs_edges(edges, targets)
 }
 
 cdg_node_to_edges <- function(node) {
@@ -82,7 +82,7 @@ cdg_transitive_edges <- function(vertex, edges) {
   expand.grid(from = from, to = to, stringsAsFactors = FALSE)
 }
 
-cdg_bfs_edges <- function(edges) {
+cdg_bfs_edges <- function(edges, targets) {
   if (!nrow(edges)) {
     return(edges)
   }
