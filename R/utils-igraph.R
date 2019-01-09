@@ -54,16 +54,8 @@ prune_drake_graph <- function(
     )
     return(graph)
   }
-  ignore <- lightly_parallelize(
-    X = to,
-    FUN = function(vertex) {
-      drake_subcomponent(graph = graph, v = vertex, mode = "in")$name
-    },
-    jobs = jobs
-  )
-  ignore <- unlist(ignore)
-  ignore <- unique(ignore)
-  ignore <- setdiff(igraph::V(graph)$name, ignore)
+  keep <- upstream_nodes(graph, to)
+  ignore <- setdiff(igraph::V(graph)$name, keep)
   delete_vertices(graph = graph, v = ignore)
 }
 
@@ -107,18 +99,39 @@ get_neighborhood <- function(graph, from, mode, order) {
   graph
 }
 
-downstream_nodes <- function(from, graph, jobs) {
-  if (!length(from)) {
+downstream_nodes <- function(graph, from) {
+  edges <- igraph::as_long_data_frame(graph)
+  edges <- data.frame(
+    from = edges$from_name,
+    to = edges$to_name,
+    stringsAsFactors = FALSE
+  )
+  vertices <- from
+  while (length(from)) {
+    from <- edges$to[edges$from %in% from]
+    from <- setdiff(from, vertices)
+    vertices <- c(vertices, from)
+  }
+  vertices
+}
+
+upstream_nodes <- function(graph, to) {
+  if (!length(to)) {
     return(character(0))
   }
-  out <- lightly_parallelize(
-    X = from,
-    FUN = function(node) {
-      drake_subcomponent(graph, v = node, mode = "out")$name
-    },
-    jobs = jobs
+  edges <- igraph::as_long_data_frame(graph)
+  edges <- data.frame(
+    from = edges$from_name,
+    to = edges$to_name,
+    stringsAsFactors = FALSE
   )
-  clean_dependency_list(out)
+  vertices <- to
+  while (length(to)) {
+    to <- edges$from[edges$to %in% to]
+    to <- setdiff(to, vertices)
+    vertices <- c(vertices, to)
+  }
+  vertices
 }
 
 leaf_nodes <- function(graph) {
@@ -132,11 +145,4 @@ subset_graph <- function(graph, subset) {
   }
   subset <- intersect(subset, V(graph)$name)
   igraph::induced_subgraph(graph = graph, vids = subset)
-}
-
-drake_subcomponent <- function(...) {
-  opt <- igraph::igraph_opt("return.vs.es")
-  on.exit(igraph::igraph_options(return.vs.es = opt))
-  igraph::igraph_options(return.vs.es = TRUE)
-  igraph::subcomponent(...)
 }
