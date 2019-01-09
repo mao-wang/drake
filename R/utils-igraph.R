@@ -100,38 +100,24 @@ get_neighborhood <- function(graph, from, mode, order) {
 }
 
 downstream_nodes <- function(graph, from) {
-  edges <- igraph::as_long_data_frame(graph)
-  edges <- data.frame(
-    from = edges$from_name,
-    to = edges$to_name,
-    stringsAsFactors = FALSE
-  )
-  vertices <- from
-  while (length(from)) {
-    from <- edges$to[edges$from %in% from]
-    from <- setdiff(from, vertices)
-    vertices <- c(vertices, from)
-  }
-  vertices
+  drake_subcomponent(graph, vertices = from, mode = "out")
 }
 
 upstream_nodes <- function(graph, to) {
-  if (!length(to)) {
+  drake_subcomopnent(graph, vertices = to, mode = "in")
+}
+
+drake_subcompnent <- function(graph, vertices, mode) {
+  from <- intersect(vertices, igraph::V(graph)$name)
+  if (!length(vertices)) {
     return(character(0))
   }
-  edges <- igraph::as_long_data_frame(graph)
-  edges <- data.frame(
-    from = edges$from_name,
-    to = edges$to_name,
-    stringsAsFactors = FALSE
-  )
-  vertices <- to
-  while (length(to)) {
-    to <- edges$from[edges$to %in% to]
-    to <- setdiff(to, vertices)
-    vertices <- c(vertices, to)
+  out <- from
+  while (length(from)) {
+    from <- adjacent_vertices(graph, v = from, mode = mode)
+    out <- c(out, from)
   }
-  vertices
+  out
 }
 
 leaf_nodes <- function(graph) {

@@ -86,6 +86,7 @@ cdg_finalize_graph <- function(edges, targets, config) {
   file_out <- edges$to[edges$from %in% targets & is_encoded_path(edges$to)]
   to <- union(targets, file_out)
   graph <- igraph::graph_from_data_frame(edges)
+  check_drake_graph(graph)
   graph <- prune_drake_graph(graph, to = to, jobs = config$jobs)
   graph <- igraph::set_vertex_attr(graph, "imported", value = TRUE)
   index <- c(config$plan$target, file_out)
