@@ -2,49 +2,30 @@
 % Please edit documentation in R/utils-igraph.R
 \name{prune_drake_graph}
 \alias{prune_drake_graph}
-\title{Prune the dependency network of your project.}
+\title{Prune an igraph. Not a user-side function.}
 \usage{
 prune_drake_graph(graph, to = igraph::V(graph)$name, jobs = 1)
 }
 \arguments{
 \item{graph}{An igraph object to be pruned.}
 
-\item{to}{Character vector, names of the vertices that draw
-the line for pruning. The pruning process removes all vertices
-downstream of \code{to}.}
+\item{to}{Character vector, of destination vertices.}
 
-\item{jobs}{Number of jobs for light parallelism (on non-Windows machines).}
+\item{jobs}{deprecated}
 }
 \value{
-A pruned igraph object representing the dependency network
-of the workflow.
+An \code{igraph} object
 }
 \description{
-\code{igraph} objects are used
-internally to represent the dependency network of your workflow.
-See \code{drake_config(my_plan)$graph} from the mtcars example.
+Similar to \code{igraph::subcomponent(mode = "in")}
+but able to support multiple destination vertices.
+For the internals of \code{drake} only.
+Not a user-side function.
 }
 \details{
-For a supplied graph, take the subgraph of all combined
-incoming paths to the vertices in \code{to}. In other words,
-remove the vertices after \code{to} from the graph.
+Removes igraph attributes, so be careful.
 }
 \examples{
-\dontrun{
-test_with_dir("Quarantine side effects.", {
-load_mtcars_example() # Get the code with drake_example("mtcars").
-# Build the igraph object representing the workflow dependency network.
-graph <- drake_config(my_plan)$graph
-# The default plotting is not the greatest,
-# but you will get the idea.
-# plot(graph) # nolint
-# Prune the graph: that is, remove the nodes downstream
-# from 'small' and 'large'
-pruned <- prune_drake_graph(graph = graph, to = c("small", "large"))
-# plot(pruned) # nolint
-})
+# Not a user-side function.
 }
-}
-\seealso{
-\code{\link[=drake_config]{drake_config()}}, \code{\link[=make]{make()}}
-}
+\keyword{internal}

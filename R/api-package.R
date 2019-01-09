@@ -40,10 +40,10 @@
 #' @useDynLib drake, .registration = TRUE
 #' @importFrom base64url base32_decode base32_encode
 #' @importFrom digest digest
-#' @importFrom igraph adjacent_vertices components delete_vertices
-#'   degree gorder igraph_opt igraph_options induced_subgraph is_dag
-#'   make_empty_graph set_vertex_attr simplify subcomponent
-#'   topo_sort V vertex_attr
+#' @importFrom igraph adjacent_vertices as_long_data_frame components
+#'   delete_vertices degree gorder igraph_opt igraph_options
+#'   induced_subgraph is_dag make_empty_graph set_vertex_attr
+#'   simplify subcomponent topo_sort V vertex_attr
 #' @importFrom methods new setRefClass
 #' @importFrom rlang enexpr enexprs enquo eval_tidy expr exprs
 #' @importFrom storr storr_environment storr_rds

@@ -1,34 +1,17 @@
-#' @title Prune the dependency network of your project.
+#' @title Prune an igraph. Not a user-side function.
 #' @export
-#' @seealso [drake_config()], [make()]
-#' @description `igraph` objects are used
-#' internally to represent the dependency network of your workflow.
-#' See `drake_config(my_plan)$graph` from the mtcars example.
-#' @details For a supplied graph, take the subgraph of all combined
-#' incoming paths to the vertices in `to`. In other words,
-#' remove the vertices after `to` from the graph.
-#' @return A pruned igraph object representing the dependency network
-#'   of the workflow.
+#' @keywords internal
+#' @description Similar to `igraph::subcomponent(mode = "in")`
+#'   but able to support multiple destination vertices.
+#'   For the internals of `drake` only.
+#'   Not a user-side function.
+#' @details Removes igraph attributes, so be careful.
+#' @return An `igraph` object
 #' @param graph An igraph object to be pruned.
-#' @param to Character vector, names of the vertices that draw
-#'   the line for pruning. The pruning process removes all vertices
-#'   downstream of `to`.
-#' @param jobs Number of jobs for light parallelism (on non-Windows machines).
+#' @param to Character vector, of destination vertices.
+#' @param jobs deprecated
 #' @examples
-#' \dontrun{
-#' test_with_dir("Quarantine side effects.", {
-#' load_mtcars_example() # Get the code with drake_example("mtcars").
-#' # Build the igraph object representing the workflow dependency network.
-#' graph <- drake_config(my_plan)$graph
-#' # The default plotting is not the greatest,
-#' # but you will get the idea.
-#' # plot(graph) # nolint
-#' # Prune the graph: that is, remove the nodes downstream
-#' # from 'small' and 'large'
-#' pruned <- prune_drake_graph(graph = graph, to = c("small", "large"))
-#' # plot(pruned) # nolint
-#' })
-#' }
+#' # Not a user-side function.
 prune_drake_graph <- function(
   graph, to = igraph::V(graph)$name, jobs = 1
 ) {
@@ -54,17 +37,10 @@ prune_drake_graph <- function(
     )
     return(graph)
   }
-  ignore <- lightly_parallelize(
-    X = to,
-    FUN = function(vertex) {
-      drake_subcomponent(graph = graph, v = vertex, mode = "in")$name
-    },
-    jobs = jobs
-  )
-  ignore <- unlist(ignore)
-  ignore <- unique(ignore)
-  ignore <- setdiff(igraph::V(graph)$name, ignore)
-  delete_vertices(graph = graph, v = ignore)
+  edges <- igraph::as_long_data_frame(graph)
+  edges <- weak_tibble(from = edges$from_name, to = edges$to_name)
+  edges <- cdg_bfs_edges(edges, to)
+  igraph::graph_from_data_frame(edges)
 }
 
 deps_graph <- function(targets, graph, reverse = FALSE) {
